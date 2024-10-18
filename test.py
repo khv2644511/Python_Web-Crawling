@@ -14,24 +14,27 @@ pw = os.environ.get('PW')
 
 # 1. 브라우저 열기
 driver = webdriver.Chrome()
-driver.get("https://nid.naver.com/nidlogin.login?mode=form&url=https://www.naver.com/")
+driver.get("https://www.yolcargo.com/login")
 
-time.sleep(1)
+def login():
+    # 2. 아이디 입력
+    pyperclip.copy(id)
 
-# 2. 아이디 입력
-pyperclip.copy(id)
-driver.find_element(By.ID, "id").send_keys(Keys.COMMAND, "v")
-time.sleep(1)
+    # elements = driver.find_element(By.CSS_SELECTOR, "#input-23")
+    # print(elements)
+    driver.find_element(By.CSS_SELECTOR, "#input-23").send_keys(Keys.COMMAND, "v")
+    time.sleep(1)
 
-# 3. 비밀번호 입력
-pyperclip.copy(pw)
-driver.find_element(By.ID, "pw").send_keys(Keys.COMMAND, "v")
-time.sleep(1)
+    # 3. 비밀번호 입력
+    pyperclip.copy(pw)
+    driver.find_element(By.CSS_SELECTOR, "#input-25").send_keys(Keys.COMMAND, "v")
+    time.sleep(1)
 
-# 4. 로그인 버튼 클릭
-driver.find_element(By.ID, "log.login").click()
+    # 4. 로그인 버튼 클릭
+    driver.find_element(By.CSS_SELECTOR, "#app > div > div > div.login_wrap > div.v-card.v-card--flat.v-theme--light.v-card--density-default.v-card--variant-elevated.login > button").click()
+    time.sleep(7)
 
-time.sleep(7)
+login()
 # response = requests.get(url)
 
 # if response.status_code == 200:
