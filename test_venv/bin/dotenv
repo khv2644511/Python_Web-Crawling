@@ -1,4 +1,4 @@
-#!/Users/hyebin/Desktop/personal/python_crawling/test_venv/bin/python3
+#!/Users/hyebin/Desktop/personal/python_crawling/test_venv/bin/pypy3
 # -*- coding: utf-8 -*-
 import re
 import sys
