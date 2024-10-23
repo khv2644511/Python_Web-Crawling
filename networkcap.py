@@ -13,6 +13,36 @@ import time
 import selenium
 print(selenium.__version__)
 
+class LoginRunner:
+    def __init__(self):
+        self.test_runner = TestRunner()
+        self.test_runner.setup_driver()
+        self.driver = self.test_runner.driver
+
+    def login(self):
+        self.driver.get("https://www.ekmtc.com/index.html#/main")
+        login_button = WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "body > div > div.wrap.wrap_KOR > div.header > div.inner_header > div.wrap_util > ul > li:nth-child(2) > a")))
+        login_button.click()
+
+        id_input = WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "#id")))
+        id_input.send_keys(os.environ.get('ID'))
+
+        pw_input = WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "#pw")))
+        pw_input.send_keys(os.environ.get('PW'))
+
+        login_submit = WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "body > div > div.wrap.wrap_KOR > div.header > div.inner_header > div.wrap_util > div.loginLayer_wrap > fieldset > div.btnarea > a.button.blue.sm")))
+        login_submit.click()
+
+        time.sleep(3)
+        profile_select = WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, '#profile_pop > div > div.content_box > ul > li:nth-child(2) > p.img > img')))
+        profile_select.click()
+
+
 class TestRunner:
     def __init__(self):
         self.driver = None  # driver 초기화
@@ -45,8 +75,11 @@ class TestRunner:
                 # 응답받은 각 요청의 URL, 상태 코드, 컨텐츠 타입을 출력
     
 def main():
-    test_runner = TestRunner()
-    test_runner.test_run()
+    login_runner = LoginRunner()
+    login_runner.login()
+
+    # test_runner = TestRunner()
+    # test_runner.test_run()
 
 if __name__ == '__main__':
     main()
