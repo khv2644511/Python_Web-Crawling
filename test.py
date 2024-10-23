@@ -10,10 +10,20 @@ import schedule
 import requests
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from seleniumwire import webdriver  # Import from selenium-wire to access additional features
+import json
+
+import time
+
+import os
+import networkcap
+
 
 
 option = Options()
-
 # 알림창 끄기
 option.add_experimental_option("prefs", {
     "profile.default_content_setting_values.notifications": 2 # 알림 차단
@@ -22,7 +32,20 @@ option.add_experimental_option("prefs", {
 
 # 1. 브라우저 열기
 # driver = webdriver.Chrome()
-driver = webdriver.Chrome(option)
+# driver = webdriver.Chrome(option)
+# chrome_options = webdriver.ChromeOptions()
+
+def get_chrome_options():
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument('--no-sandbox')  # 안전하지 않은 작업을 방지
+    chrome_options.add_argument('--window-size=1280,920')  # 창 크기 설정
+    chrome_options.add_argument('--disable-dev-shm-usage')  # 공유 메모리 사용 제한
+    return chrome_options
+chrome_options = get_chrome_options()
+chrome_driver_path = ChromeDriverManager().install()
+service = Service(chrome_driver_path)
+driver = webdriver.Chrome(service=service, options=chrome_options) 
+
 driver.get("https://www.ekmtc.com/index.html#/main")
 
 # def postLogin():
@@ -59,6 +82,9 @@ def findNextMonth():
 
     if calendar_visible:
         driver.find_element(By.CLASS_NAME, 'button-11').click()
+    
+    time.sleep(3)
+    driver.find_element(By.CSS_SELECTOR, '#frmLeg > div.position_relative > span > a').click()
     #     for i in range(1, 5):
     #         for j in range(1, 4):
     #             css = f"#MonthPicker_ > div:nth-child(2) > table > tbody > tr:nth-child({j}) > td:nth-child({j}) > a"
@@ -77,6 +103,33 @@ def findNextMonth():
     #MonthPicker_ > div:nth-child(2) > table > tbody > tr:nth-child(1) > td:nth-child(3) > a > span
     #MonthPicker_ > div:nth-child(2) > table > tbody > tr:nth-child(2) > td:nth-child(1) > a > span
     #MonthPicker_ > div:nth-child(2) > table > tbody > tr:nth-child(4) > td:nth-child(1) > a > span
+def getResponse():
+    # Perform a GET request to a webpage
+    time.sleep(7)
+    driver.get('https://api.ekmtc.com')
+
+    request = driver.wait_for_request('./schedule/schedule/leg/pop-fre-surcharge/*')
+
+    content_type = request.response.headers.get('Content-Type', '')
+    print(content_type)
+    if 'text' in content_type or 'json' in content_type:
+        # If the content is text, decode it as utf-8
+                #     f.write(json_data)
+        json_data = json.loads(request.response.body.decode('utf-8'))
+
+        time.sleep(5)
+        with open('data.json', 'w') as f:
+            json.dump(json_data, f)
+    elif 'image' in content_type:
+        # If the content is an image, handle it as binary data
+        image_data = request.response.body
+        print(f'Image retrieved, 응답코드 {request.response.status_code}, 컨텐츠 유형: {content_type}')
+        # Optionally, save the image to a file
+        with open('downloaded_image.png', 'wb') as f:
+            f.write(image_data)
+    else:
+        # If the content type is something else
+        print(f'Unhandled content type {content_type}, 응답코드 {request.response.status_code}')
 
 def findFreight():
     # date15 = driver.find_element(By.CSS_SELECTOR, 'body > div:nth-child(1) > div.wrap.wrap_KOR > div.container_ekmtc > div.content > div > div.tabs-details > div:nth-child(1) > div > div:nth-child(2) > div > div.sc_calender_type > table > tbody > tr:nth-child(3) > td:nth-child(3)')
@@ -84,8 +137,9 @@ def findFreight():
     # 첫번째 선사 선택
     # ship = date15.find_element(By.CLASS_NAME, 'finish')
     # ship.click()
+    time.sleep(3)
 
-    driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[2]/div/div[2]/table/tbody/tr[3]/td[3]/div/div/div[27]/div/div/p/a').click()
+    driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[2]/div/div[2]/table/tbody/tr[3]/td[3]/div/div/div[24]/div/div/p/a').click()
     time.sleep(3)
 
     # 운임확인 버튼 클릭
@@ -93,15 +147,13 @@ def findFreight():
 
     time.sleep(3)
 
-    headers = {
-        'Authorization' : 'Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzZXNzSWQiOiJCZExuOWoyc3BkY1AzaWNfSHRtWUhocnRUR1VFS2t3cFdxUGNuUzc0LTExMjAyMyIsInVzZXJJZCI6IllPTDAwM18wMDEiLCJvcmdVc2VySWQiOiJZT0xDQVJHTyIsInVzZXJOYW1lIjoi6rCV7J246recIiwidXNlckVuYW1lIjoiWU9MIElOQyIsImNzdENhdENkIjoiMDEiLCJ1c2VyVHlwZSI6IjkiLCJjc3RDZCI6IllPTDAwMyIsInN0YWZmRmxhZyI6Ik4iLCJ1c2VyQ3RyQ2QiOiJLUiIsImFkbWluIjpmYWxzZSwicm9sZSI6Ik1FTUJFUiIsInNlcnZpY2VMYW5nIjoiS09SIiwiaWF0IjoxNzI5NTYzNjIzLCJleHAiOjE3MzIyNDIwMjN9.dA2zge3Sna-9ryzbVFVWFrGcfG3vOG-SGCEXoiE3x1c',
-        # 'User-Agent': 'MyUserAgent/1.0',
-        }
-    
-    session = requests.session()
+    getResponse()
 
-    res = session.get('https://api.ekmtc.com/schedule/schedule/leg/pop-fre-surcharge?porCtrCd=KR&porPlcCd=PUS&dlyCtrCd=HK&dlyPlcCd=HKG&polNm=BUSAN,KOREA&podNm=HONG+KONG&etd=20241112&frtAppNo=&vslCd=JTGZ&vslNm=TS+GUANGZHOU&voyNo=24019S&rteCd=KTH&eiCatCd=O&frtResult=&reqRno=000000473452&bkgClose=N&raTsParam=&promotionChk=N&scenarioCd=&promoNo=&kmtcSpotYn=Y&kmtcPremiumNegoYn=Y&etaBookingMsg=&hongkongTsYn=&hongkongTsMsg=&detailResp2=%7B%22tsDegree%22:%220%22,%22vslNm1%22:%22TS+GUANGZHOU%22,%22voyNo%22:%2224019S%22,%22rteCd%22:%22KTH%22,%22polNm%22:%22BUSAN,KOREA%22,%22podNm%22:%22HONG+KONG%22,%22pod1Nm%22:%22HONG+KONG%22,%22transitTime%22:%226%EC%9D%BC+4%EC%8B%9C%EA%B0%84+%22,%22transitTime1%22:%226%EC%9D%BC+4%EC%8B%9C%EA%B0%84+%22,%22polEtbDT%22:%222024.11.12+08:00%22,%22etdDT%22:%222024.11.12+19:00%22,%22polTml%22:%22BPTG+(Busan+Port+Terminal+(GAMMAN))%22,%22polTmlCd%22:%22BPTG%22,%22etaDT%22:%222024.11.18+23:00%22,%22podTml%22:%22HIT+(Hongkong+International+Terminal)%22,%22vslNm2%22:%22%22,%22voyNo2%22:%22%22,%22rteCd2%22:%22%22,%22pod2Nm%22:%22%22,%22transitTime2%22:%22%22,%22polEtbDT2%22:%22%22,%22polTml2%22:%22%22,%22etaDT2%22:%22%22,%22podTml2%22:%22%22,%22vslNm3%22:%22%22,%22voyNo3%22:%22%22,%22rteCd3%22:%22%22,%22pod3Nm%22:%22%22,%22transitTime3%22:%22%22,%22polEtbDT3%22:%22%22,%22polTml3%22:%22%22,%22etaDT3%22:%22%22,%22podTml3%22:%22%22,%22vslNm4%22:%22%22,%22voyNo4%22:%22%22,%22rteCd4%22:%22%22,%22pod4Nm%22:%22%22,%22transitTime4%22:%22%22,%22polEtbDT4%22:%22%22,%22polTml4%22:%22%22,%22etaDT4%22:%22%22,%22podTml4%22:%22%22,%22bkgDocCls%22:%222024.11.08+11:00%22,%22bkgCgoCls%22:%222024.11.12+02:00%22,%22bkgMfCls%22:%222024.11.08+11:00%22,%22cfsCls%22:%222024.11.08+16:00%22,%22mrnNo%22:%22%22,%22apoTcnt%22:%22%22,%22callSign%22:%22V7A5825%22,%22ts%22:%22N%22,%22vslCd%22:%22JTGZ%22,%22pol%22:%22PUS%22,%22pod%22:%22HKG%22,%22bkgClose%22:%22N%22,%22dtBkgYn%22:%22N%22,%22bkgVslCd%22:%22JTGZ%22,%22bkgVoyNo%22:%2224019S%22,%22kmtcSpotLineYn%22:%22Y%22,%22kmtcSpotUserYn%22:%22Y%22,%22kmtcSpotClosYn%22:%22N%22,%22etd%22:%2220241112%22,%22etdTm%22:%221900%22,%22eta%22:%2220241118%22,%22etaTm%22:%222300%22,%22vslNm%22:%22TS+GUANGZHOU%22,%22polEta%22:%22202411120800%22,%22polEtd%22:%22202411121900%22,%22podTmlCd%22:%22HIT%22,%22polCtrCd%22:%22KR%22,%22podCtrCd%22:%22HK%22,%22vgmDocCls%22:%222024.11.08+11:00%22,%22frtResult%22:%22A%22,%22frtAppNo%22:%22%22,%22reqRno%22:%22000000473452%22%7D&urlOrNot=false&cntrTypCd=GP', headers=headers)
-    print(res.json())
+
+    # session = requests.session()
+
+    # res = session.get('https://api.ekmtc.com/schedule/schedule/leg/pop-fre-surcharge?porCtrCd=KR&porPlcCd=PUS&dlyCtrCd=HK&dlyPlcCd=HKG&polNm=BUSAN,KOREA&podNm=HONG+KONG&etd=20241112&frtAppNo=&vslCd=JTGZ&vslNm=TS+GUANGZHOU&voyNo=24019S&rteCd=KTH&eiCatCd=O&frtResult=&reqRno=000000473452&bkgClose=N&raTsParam=&promotionChk=N&scenarioCd=&promoNo=&kmtcSpotYn=Y&kmtcPremiumNegoYn=Y&etaBookingMsg=&hongkongTsYn=&hongkongTsMsg=&detailResp2=%7B%22tsDegree%22:%220%22,%22vslNm1%22:%22TS+GUANGZHOU%22,%22voyNo%22:%2224019S%22,%22rteCd%22:%22KTH%22,%22polNm%22:%22BUSAN,KOREA%22,%22podNm%22:%22HONG+KONG%22,%22pod1Nm%22:%22HONG+KONG%22,%22transitTime%22:%226%EC%9D%BC+4%EC%8B%9C%EA%B0%84+%22,%22transitTime1%22:%226%EC%9D%BC+4%EC%8B%9C%EA%B0%84+%22,%22polEtbDT%22:%222024.11.12+08:00%22,%22etdDT%22:%222024.11.12+19:00%22,%22polTml%22:%22BPTG+(Busan+Port+Terminal+(GAMMAN))%22,%22polTmlCd%22:%22BPTG%22,%22etaDT%22:%222024.11.18+23:00%22,%22podTml%22:%22HIT+(Hongkong+International+Terminal)%22,%22vslNm2%22:%22%22,%22voyNo2%22:%22%22,%22rteCd2%22:%22%22,%22pod2Nm%22:%22%22,%22transitTime2%22:%22%22,%22polEtbDT2%22:%22%22,%22polTml2%22:%22%22,%22etaDT2%22:%22%22,%22podTml2%22:%22%22,%22vslNm3%22:%22%22,%22voyNo3%22:%22%22,%22rteCd3%22:%22%22,%22pod3Nm%22:%22%22,%22transitTime3%22:%22%22,%22polEtbDT3%22:%22%22,%22polTml3%22:%22%22,%22etaDT3%22:%22%22,%22podTml3%22:%22%22,%22vslNm4%22:%22%22,%22voyNo4%22:%22%22,%22rteCd4%22:%22%22,%22pod4Nm%22:%22%22,%22transitTime4%22:%22%22,%22polEtbDT4%22:%22%22,%22polTml4%22:%22%22,%22etaDT4%22:%22%22,%22podTml4%22:%22%22,%22bkgDocCls%22:%222024.11.08+11:00%22,%22bkgCgoCls%22:%222024.11.12+02:00%22,%22bkgMfCls%22:%222024.11.08+11:00%22,%22cfsCls%22:%222024.11.08+16:00%22,%22mrnNo%22:%22%22,%22apoTcnt%22:%22%22,%22callSign%22:%22V7A5825%22,%22ts%22:%22N%22,%22vslCd%22:%22JTGZ%22,%22pol%22:%22PUS%22,%22pod%22:%22HKG%22,%22bkgClose%22:%22N%22,%22dtBkgYn%22:%22N%22,%22bkgVslCd%22:%22JTGZ%22,%22bkgVoyNo%22:%2224019S%22,%22kmtcSpotLineYn%22:%22Y%22,%22kmtcSpotUserYn%22:%22Y%22,%22kmtcSpotClosYn%22:%22N%22,%22etd%22:%2220241112%22,%22etdTm%22:%221900%22,%22eta%22:%2220241118%22,%22etaTm%22:%222300%22,%22vslNm%22:%22TS+GUANGZHOU%22,%22polEta%22:%22202411120800%22,%22polEtd%22:%22202411121900%22,%22podTmlCd%22:%22HIT%22,%22polCtrCd%22:%22KR%22,%22podCtrCd%22:%22HK%22,%22vgmDocCls%22:%222024.11.08+11:00%22,%22frtResult%22:%22A%22,%22frtAppNo%22:%22%22,%22reqRno%22:%22000000473452%22%7D&urlOrNot=false&cntrTypCd=GP', headers=headers)
+    # print(res.json())
 
 
 
@@ -176,9 +228,7 @@ def login():
         # date.send_keys('2024.11')
         time.sleep(3)
 
-        driver.find_element(By.CSS_SELECTOR, '#frmLeg > div.position_relative > span > a').click()
-
-        time.sleep(3)
+   
 
         findFreight()
 
