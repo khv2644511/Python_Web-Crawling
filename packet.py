@@ -14,7 +14,6 @@ import time
 import json
 import requests
 
-
 class FreightAutomation:
     def __init__(self):
         self.driver = self.initialize_driver()
@@ -43,6 +42,7 @@ class FreightAutomation:
         }
 
         chrome_options = webdriver.ChromeOptions()
+        # chrome_options.add_argument("headless")
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--window-size=1280,920')
         chrome_options.add_argument('--disable-dev-shm-usage')
@@ -76,27 +76,58 @@ class FreightAutomation:
 
     def set_port(self):
         try:
-            self.driver.get(self.schedule_url)
+            time.sleep(5)
+
+            # self.driver.get(self.schedule_url)
+            # self.schedule_url = "https://www.ekmtc.com/index.html#/schedule/leg"
+            self.driver.get("https://www.ekmtc.com/index.html#/schedule/leg")
+            time.sleep(5)
+
+          # Incorrect method causing "unhashable type: 'dict'" error
+            # Correct usage
+            def interceptor(request):
+                token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzZXNzSWQiOiJBZDBpRVBwZ19WY0tkTUhxcXdLaVFmUEZRMENFQWJsaGtEaUZwNmhyLTEzNDU0OCIsInVzZXJJZCI6IllPTDAwM18wMDEiLCJvcmdVc2VySWQiOiJZT0xDQVJHTyIsInVzZXJOYW1lIjoi6rCV7J246recIiwidXNlckVuYW1lIjoiWU9MIElOQyIsImNzdENhdENkIjoiMDEiLCJ1c2VyVHlwZSI6IjkiLCJjc3RDZCI6IllPTDAwMyIsInN0YWZmRmxhZyI6Ik4iLCJ1c2VyQ3RyQ2QiOiJLUiIsImFkbWluIjpmYWxzZSwicm9sZSI6Ik1FTUJFUiIsInNlcnZpY2VMYW5nIjoiS09SIiwiaWF0IjoxNzI5NzQ1MTQ4LCJleHAiOjE3MzI0MjM1NDh9.JACVS2Ki0YukSEM3QCwgutyESKNrK6mK9ww5yEb8w2I'
+                request.headers['Authorization'] = f'Bearer {token}'
+
+            self.driver.request_interceptor = interceptor
+            # headers = {
+            #     'Authorization': f'Bearer {token}'  # Ensure the token is prefixed with 'Bearer' if required by the API
+            # }
+            self.driver.get('https://api.ekmtc.com/schedule/schedule/leg/search-schedule?startPlcCd=PUS&searchMonth=11&pointChangeYN=&bound=O&filterPolCd=&pointLength=&startPlcName=Busan,+Korea+(PUS)&destPlcCd=HKG&searchYear=2024&filterYn=N&searchYN=Y&filterPodCd=&hiddestPlcCd=&startCtrCd=KR&destCtrCd=HK&polTrmlStr=&podTrmlStr=&rteCd=&filterTs=Y&filterDirect=Y&filterTranMax=0&filterTranMin=0&hidstartPlcCd=&destPlcName=Hong+Kong+(HKG)&main=N&legIdx=0&vslType01=01&vslType03=03&unno=&commodityCd=&eiCatCd=O&calendarOrList=C&cpYn=N&promotionChk=N&vslCd=&voyNo=')
+            elements = self.driver.find_element(By.XPATH, '/html/body/pre')
+            print(elements.text)
+
+            json_data = json.loads(elements.text)
+            time.sleep(5)
+            with open('schedule.json', 'w') as f:
+                json.dump(json_data, f)
+            # request = self.driver.wait_for_request('https://api.ekmtc.com/schedule/schedule/leg/search-schedule?startPlcCd=PUS&searchMonth=11&pointChangeYN=&bound=O&filterPolCd=&pointLength=&startPlcName=Busan,+Korea+(PUS)&destPlcCd=HKG&searchYear=2024&filterYn=N&searchYN=Y&filterPodCd=&hiddestPlcCd=&startCtrCd=KR&destCtrCd=HK&polTrmlStr=&podTrmlStr=&rteCd=&filterTs=Y&filterDirect=Y&filterTranMax=0&filterTranMin=0&hidstartPlcCd=&destPlcName=Hong+Kong+(HKG)&main=N&legIdx=0&vslType01=01&vslType03=03&unno=&commodityCd=&eiCatCd=O&calendarOrList=C&cpYn=N&promotionChk=N&vslCd=&voyNo=')
+            # print(request.response)
+            # content_type = request.response.headers.get('Content-Type')
+            # print(request.response.resstatus_code)
+            # print(request.response.headers.get('Content-Type'))
+            # if 'text' in content_type or 'json' in content_type:
+                
             # self.driver.get(self.schedule_url)
             # print(res_schedule.text.find(By.CSS_SELECTOR, '#autocomplete-form-input'))
-            time.sleep(5)
-            # 구간 선택
-            departPort = self.driver.find_element(By.CSS_SELECTOR, '#autocomplete-form-input')
-            departPort.send_keys('Busan, Korea (PUS)')
+            # time.sleep(5)
+            # # 구간 선택
+            # departPort = self.driver.find_element(By.CSS_SELECTOR, '#autocomplete-form-input')
+            # departPort.send_keys('Busan, Korea (PUS)')
             
-            WebDriverWait(self.driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[1]/form/div[1]/table/tbody/tr[1]/td[1]/div/div[2]/button[1]")))
+            # WebDriverWait(self.driver, 10).until(
+            # EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[1]/form/div[1]/table/tbody/tr[1]/td[1]/div/div[2]/button[1]")))
 
-            self.driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[1]/form/div[1]/table/tbody/tr[1]/td[1]/div/div[2]/button[1]').click()
-            time.sleep(3)
+            # self.driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[1]/form/div[1]/table/tbody/tr[1]/td[1]/div/div[2]/button[1]').click()
+            # time.sleep(3)
 
-            arrivePort = self.driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[1]/form/div[1]/table/tbody/tr[1]/td[2]/div/div[1]/input')
-            arrivePort.send_keys('Hong Kong (HKG)')
+            # arrivePort = self.driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[1]/form/div[1]/table/tbody/tr[1]/td[2]/div/div[1]/input')
+            # arrivePort.send_keys('Hong Kong (HKG)')
 
-            WebDriverWait(self.driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[1]/form/div[1]/table/tbody/tr[1]/td[2]/div/div[2]/button[1]")))
+            # WebDriverWait(self.driver, 10).until(
+            # EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[1]/form/div[1]/table/tbody/tr[1]/td[2]/div/div[2]/button[1]")))
 
-            self.driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[1]/form/div[1]/table/tbody/tr[1]/td[2]/div/div[2]/button[1]').click()
+            # self.driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[1]/form/div[1]/table/tbody/tr[1]/td[2]/div/div[2]/button[1]').click()
 
             print("port selected")
 
@@ -175,11 +206,11 @@ if __name__ == "__main__":
     time.sleep(3)
     bot.set_port()
     time.sleep(2)
-    bot.set_next_month() 
-    time.sleep(3)
-    bot.check_freight()
-    time.sleep(3)
-    bot.get_freight_data()
+    # bot.set_next_month() 
+    # time.sleep(3)
+    # bot.check_freight()
+    # time.sleep(3)
+    # bot.get_freight_data()
     # bot.check_freight()
     # bot.logout()
     # bot.close()
