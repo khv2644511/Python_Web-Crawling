@@ -1,51 +1,185 @@
-from seleniumwire import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
+# from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
-
-# from seleniumwire import decode
-
-
-# Create a new instance of the Chrome web driver
-
-def get_chrome_options():
-    chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument('--no-sandbox')  # 안전하지 않은 작업을 방지
-    chrome_options.add_argument('--window-size=1280,920')  # 창 크기 설정
-    chrome_options.add_argument('--disable-dev-shm-usage')  # 공유 메모리 사용 제한
-    return chrome_options
-chrome_options = get_chrome_options()
-chrome_driver_path = ChromeDriverManager().install()
-service = Service(chrome_driver_path)
-driver = webdriver.Chrome(service=service, options=chrome_options) 
-
-# Perform a GET request to a webpage
-driver.get('https://www.google.com')
-request = driver.wait_for_request('./images/branding/googlelogo/2x/googlelogo_color_272x92dp.png')
-
-content_type = request.response.headers.get('Content-Type', '')
-
-if 'text' in content_type or 'json' in content_type:
-    # If the content is text, decode it as utf-8
-    print(f'{request.response.body.decode("utf-8")}, 응답코드 {request.response.status_code}, 컨텐츠 유형: {content_type}')
-elif 'image' in content_type:
-    # If the content is an image, handle it as binary data
-    image_data = request.response.body
-    print(f'Image retrieved, 응답코드 {request.response.status_code}, 컨텐츠 유형: {content_type}')
-    # Optionally, save the image to a file
-    with open('downloaded_image.png', 'wb') as f:
-        f.write(image_data)
-else:
-    # If the content type is something else
-    print(f'Unhandled content type {content_type}, 응답코드 {request.response.status_code}')
-# print(f'{request.response.body.decode("utf-8")}, 응답코드 {request.response.status_code}, 컨텐츠 유형: {request.response.headers["Content-Type"]}')
-# response = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))".decode('utf-8')
-# print(response)
-
-# Access the requests made by the browser
-# for request in driver.requests:
-#     if request.response:
-#         print(request.response.body, request.response.status_code)
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+from dotenv import load_dotenv
+from bs4 import BeautifulSoup as bs
+from seleniumwire import webdriver
+import os
+import time
+import json
+import requests
 
 
-# Close the web driver
-driver.quit()
+class FreightAutomation:
+    def __init__(self):
+        self.driver = self.initialize_driver()
+        self.login_url = "https://www.ekmtc.com"
+        self.schedule_url = "https://www.ekmtc.com/index.html#/schedule/leg"
+        load_dotenv()
+        self.id = os.getenv('ID')
+        self.pw = os.getenv('PW')
+
+    # def initialize_driver(self):
+    #     # options = Options()
+    #     options = webdriver.ChromeOptions()
+    #     options.add_argument('--no-sandbox')
+    #     options.add_argument('--window-size=1280,920')
+    #     options.add_argument('--disable-dev-shm-usage')
+    #     # options.add_experimental_option("prefs", {"profile.default_content_setting_values.notifications": 2})
+    #     chrome_driver_path = ChromeDriverManager().install()
+    #     service = Service(chrome_driver_path)
+    #     return webdriver.Chrome(service=service, options=options)
+
+    def initialize_driver(self):
+
+        options = {
+            'disable_encoding': True  # This can help capture binary data without corruption
+            # Add other necessary options
+        }
+
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--window-size=1280,920')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+
+        chrome_driver_path = ChromeDriverManager().install()
+        service = Service(chrome_driver_path)
+
+        return webdriver.Chrome(service=service, options=chrome_options, seleniumwire_options=options)
+
+
+    def login(self):
+        self.driver.get(self.login_url)
+        try:
+            # 로그인 버튼 클릭
+            self.driver.find_element(By.CSS_SELECTOR, "body > div > div.wrap.wrap_KOR > div.header > div.inner_header > div.wrap_util > ul > li:nth-child(2) > a").click()
+
+            id_input = self.driver.find_element(By.CSS_SELECTOR, "#id")
+            id_input.send_keys(self.id)
+            pw_input = self.driver.find_element(By.CSS_SELECTOR, "#pw")
+            pw_input.send_keys(self.pw)
+
+            # 로그인 버튼 클릭
+            self.driver.find_element(By.CSS_SELECTOR, "body > div > div.wrap.wrap_KOR > div.header > div.inner_header > div.wrap_util > div.loginLayer_wrap > fieldset > div.btnarea > a.button.blue.sm").click()
+
+            # 프로필 선택
+            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, "#profile_pop > div > div.content_box > ul > li:nth-child(2) > p.img > img")))
+            self.driver.find_element(By.CSS_SELECTOR, '#profile_pop > div > div.content_box > ul > li:nth-child(2) > p.img > img').click()
+            print("Login successful")
+        except Exception as e:
+            print(f"Login failed: {str(e)}")
+
+    def set_port(self):
+        try:
+            self.driver.get(self.schedule_url)
+            # self.driver.get(self.schedule_url)
+            # print(res_schedule.text.find(By.CSS_SELECTOR, '#autocomplete-form-input'))
+            time.sleep(5)
+            # 구간 선택
+            departPort = self.driver.find_element(By.CSS_SELECTOR, '#autocomplete-form-input')
+            departPort.send_keys('Busan, Korea (PUS)')
+            
+            WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[1]/form/div[1]/table/tbody/tr[1]/td[1]/div/div[2]/button[1]")))
+
+            self.driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[1]/form/div[1]/table/tbody/tr[1]/td[1]/div/div[2]/button[1]').click()
+            time.sleep(3)
+
+            arrivePort = self.driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[1]/form/div[1]/table/tbody/tr[1]/td[2]/div/div[1]/input')
+            arrivePort.send_keys('Hong Kong (HKG)')
+
+            WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[1]/form/div[1]/table/tbody/tr[1]/td[2]/div/div[2]/button[1]")))
+
+            self.driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[1]/form/div[1]/table/tbody/tr[1]/td[2]/div/div[2]/button[1]').click()
+
+            print("port selected")
+
+        except Exception as e:
+            print(f"Error selecting set port: {str(e)}")
+
+    def set_next_month(self):
+        try: 
+            self.driver.find_element(By.CSS_SELECTOR, '#frmLeg > div:nth-child(1) > table > tbody > tr:nth-child(2) > td:nth-child(2) > span:nth-child(1) > div > div > input').click()
+
+
+            WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located((By.ID, "MonthPicker_")))
+
+            time.sleep(4)
+            self.driver.find_element(By.CLASS_NAME, 'button-11').click()
+            time.sleep(3)
+            self.driver.find_element(By.CSS_SELECTOR, '#frmLeg > div.position_relative > span > a').click()
+            print("set_next_month successfully")
+
+        except Exception as e:
+            print(f"Error set next month: {str(e)}")
+   
+
+    def check_freight(self):
+        try:
+            # Implementation to select the specific date and check freight rates
+            self.driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[2]/div/div[2]/table/tbody/tr[3]/td[3]/div/div/div[24]/div/div/p/a').click()
+            time.sleep(3)
+
+            # 운임확인 버튼 클릭
+            self.driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[4]/div/a[1]').click()
+            print("Freight checked")
+
+        except Exception as e:
+            print(f"Error checking freight: {str(e)}")
+
+    def get_freight_data(self):
+        self.driver.get('https://api.ekmtc.com')
+        try:
+            request = self.driver.wait_for_request('./schedule/schedule/leg/pop-fre-surcharge/*')
+            content_type = request.response.headers.get('Content-Type', '')
+            print(content_type)
+            if 'text' in content_type or 'json' in content_type:
+                json_data = json.loads(request.response.body.decode('utf-8'))
+                time.sleep(5)
+                with open('data2.json', 'w') as f:
+                    json.dump(json_data, f)
+            elif 'image' in content_type:
+                image_data = request.response.body
+                print(f'Image retrieved, 응답코드 {request.response.status_code}, 컨텐츠 유형: {content_type}')
+                with open('downloaded_image.png', 'wb') as f:
+                    f.write(image_data)
+            else:
+                print(f'Unhandled content type {content_type}, 응답코드 {request.response.status_code}')
+            print("get_freight_data successfully")
+
+        except Exception as e:
+            print(f"Error get_freight_data: {str(e)}")
+
+
+    def logout(self):
+        try:
+            self.driver.find_element(By.CSS_SELECTOR, 'logout_button_selector').click()
+            print("Logged out successfully")
+        except Exception as e:
+            print(f"Logout failed: {str(e)}")
+
+    def close(self):
+        self.driver.quit()
+        print("Driver closed")
+
+if __name__ == "__main__":
+    bot = FreightAutomation()
+    bot.login()
+    time.sleep(3)
+    bot.set_port()
+    time.sleep(2)
+    bot.set_next_month() 
+    time.sleep(3)
+    bot.check_freight()
+    time.sleep(3)
+    bot.get_freight_data()
+    # bot.check_freight()
+    # bot.logout()
+    # bot.close()
