@@ -23,22 +23,10 @@ class FreightAutomation:
         self.id = os.getenv('ID')
         self.pw = os.getenv('PW')
 
-    # def initialize_driver(self):
-    #     # options = Options()
-    #     options = webdriver.ChromeOptions()
-    #     options.add_argument('--no-sandbox')
-    #     options.add_argument('--window-size=1280,920')
-    #     options.add_argument('--disable-dev-shm-usage')
-    #     # options.add_experimental_option("prefs", {"profile.default_content_setting_values.notifications": 2})
-    #     chrome_driver_path = ChromeDriverManager().install()
-    #     service = Service(chrome_driver_path)
-    #     return webdriver.Chrome(service=service, options=options)
-
     def initialize_driver(self):
 
         options = {
             'disable_encoding': True  # This can help capture binary data without corruption
-            # Add other necessary options
         }
 
         chrome_options = webdriver.ChromeOptions()
@@ -78,8 +66,6 @@ class FreightAutomation:
         try:
             time.sleep(5)
 
-            # self.driver.get(self.schedule_url)
-            # self.schedule_url = "https://www.ekmtc.com/index.html#/schedule/leg"
             self.driver.get("https://www.ekmtc.com/index.html#/schedule/leg")
             time.sleep(5)
 
@@ -88,9 +74,7 @@ class FreightAutomation:
                 request.headers['Authorization'] = f'Bearer {token}'
 
             self.driver.request_interceptor = interceptor
-            # headers = {
-            #     'Authorization': f'Bearer {token}'  # Ensure the token is prefixed with 'Bearer' if required by the API
-            # }
+          
             param = {
                 "startPlcCd": "PUS",
                 "searchMonth": "11",
@@ -111,11 +95,9 @@ class FreightAutomation:
                 "calendarOrList": "C",
                 "cpYn": "N",
                 "promotionChk": "N",
-
             }
             
             self.driver.get('https://api.ekmtc.com/schedule/schedule/leg/search-schedule?startPlcCd=PUS&searchMonth=11&pointChangeYN=&bound=O&filterPolCd=&pointLength=&startPlcName=Busan,+Korea+(PUS)&destPlcCd=HKG&searchYear=2024&filterYn=N&searchYN=Y&filterPodCd=&hiddestPlcCd=&startCtrCd=KR&destCtrCd=HK&polTrmlStr=&podTrmlStr=&rteCd=&filterTs=Y&filterDirect=Y&filterTranMax=0&filterTranMin=0&hidstartPlcCd=&destPlcName=Hong+Kong+(HKG)&main=N&legIdx=0&vslType01=01&vslType03=03&unno=&commodityCd=&eiCatCd=O&calendarOrList=C&cpYn=N&promotionChk=N&vslCd=&voyNo=')
-            # requests.get('https://api.ekmtc.com/schedule/schedule/leg/search-schedule', params=param)
             time.sleep(5)
 
             # 스케줄 검색 응답 결과 저장
@@ -182,23 +164,13 @@ class FreightAutomation:
     def get_freight_data(self, reqRno_value):
         # 선사 스케줄 클릭
         try:
-            # def interceptor(request):
-            #     token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzZXNzSWQiOiJBZDBpRVBwZ19WY0tkTUhxcXdLaVFmUEZRMENFQWJsaGtEaUZwNmhyLTEzNDU0OCIsInVzZXJJZCI6IllPTDAwM18wMDEiLCJvcmdVc2VySWQiOiJZT0xDQVJHTyIsInVzZXJOYW1lIjoi6rCV7J246recIiwidXNlckVuYW1lIjoiWU9MIElOQyIsImNzdENhdENkIjoiMDEiLCJ1c2VyVHlwZSI6IjkiLCJjc3RDZCI6IllPTDAwMyIsInN0YWZmRmxhZyI6Ik4iLCJ1c2VyQ3RyQ2QiOiJLUiIsImFkbWluIjpmYWxzZSwicm9sZSI6Ik1FTUJFUiIsInNlcnZpY2VMYW5nIjoiS09SIiwiaWF0IjoxNzI5NzQ1MTQ4LCJleHAiOjE3MzI0MjM1NDh9.JACVS2Ki0YukSEM3QCwgutyESKNrK6mK9ww5yEb8w2I'
-            #     request.headers['Authorization'] = f'Bearer {token}'
-            # # self.driver.get('https://api.ekmtc.com/schedule/schedule/leg/vsl-schedule-info-detail?bound=O&podPortCd=HKG&polPortCd=PUS&voyNo=2408S&vslCd=JSKC&polTrmlCd=HBGT')
-
             # # 운임 확인 api 요청 url
-            # self.driver.request_interceptor = interceptor
             token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzZXNzSWQiOiJBZDBpRVBwZ19WY0tkTUhxcXdLaVFmUEZRMENFQWJsaGtEaUZwNmhyLTEzNDU0OCIsInVzZXJJZCI6IllPTDAwM18wMDEiLCJvcmdVc2VySWQiOiJZT0xDQVJHTyIsInVzZXJOYW1lIjoi6rCV7J246recIiwidXNlckVuYW1lIjoiWU9MIElOQyIsImNzdENhdENkIjoiMDEiLCJ1c2VyVHlwZSI6IjkiLCJjc3RDZCI6IllPTDAwMyIsInN0YWZmRmxhZyI6Ik4iLCJ1c2VyQ3RyQ2QiOiJLUiIsImFkbWluIjpmYWxzZSwicm9sZSI6Ik1FTUJFUiIsInNlcnZpY2VMYW5nIjoiS09SIiwiaWF0IjoxNzI5NzQ1MTQ4LCJleHAiOjE3MzI0MjM1NDh9.JACVS2Ki0YukSEM3QCwgutyESKNrK6mK9ww5yEb8w2I'
 
-            # request.headers['Authorization'] = f'Bearer {token}'
             header = {
                 'Authorization': f'Bearer {token}'
             }
             requests.get(f'https://api.ekmtc.com/schedule/schedule/leg/pop-fre-surcharge?porCtrCd=KR&porPlcCd=PUS&dlyCtrCd=HK&dlyPlcCd=HKG&polNm=BUSAN,KOREA&podNm=HONG+KONG&etd=20241115&frtAppNo=&vslCd=JSKC&vslNm=SKY+CHALLENGE&voyNo=2408', headers=header)
-            # self.driver.get(f'https://api.ekmtc.com/schedule/schedule/leg/pop-fre-surcharge?porCtrCd=KR&porPlcCd=PUS&dlyCtrCd=HK&dlyPlcCd=HKG&polNm=BUSAN,KOREA&podNm=HONG+KONG&etd=20241115&frtAppNo=&vslCd=JSKC&vslNm=SKY+CHALLENGE&voyNo=2408S&reqRno={reqRno_value}')
-            # request = self.driver.wait_for_request('/schedule/schedule/leg/pop-fre-surcharge/*', timeout=30)
-            # print('response =', response.status_code)
            
             time.sleep(5)
 
