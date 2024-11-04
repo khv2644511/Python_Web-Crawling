@@ -14,6 +14,7 @@ import time
 import json
 import requests
 
+
 class FreightAutomation:
     def __init__(self):
         self.driver = self.initialize_driver()
@@ -191,10 +192,9 @@ class FreightAutomation:
                 json.dump(json_data, f)
 
             print("get_freight_data successfully")
-
+            return json_data
         except Exception as e:
             print(f"Error get_freight_data: {str(e)}")
-
 
     def logout(self):
         try:
@@ -216,8 +216,9 @@ if __name__ == "__main__":
     # bot.set_next_month() 
     # time.sleep(3)
     # bot.check_freight()
-    # time.sleep(3)
     bot.get_freight_data(reqRno_value)
+    time.sleep(3)
+    # bot.insert_data_into_db(freight_data)
     # bot.check_freight()
     # bot.logout()
     # bot.close()
