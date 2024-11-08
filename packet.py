@@ -79,7 +79,6 @@ class FreightAutomation:
             if isinstance(plcName, str):
                 plcName = plcName.replace(" ", "+")
             
-            # print((ctrCd, plcCd, plcName))
             param = {
                 "startPlcCd": plcCd, # "PUS"
                 "searchMonth": "11", #
@@ -116,7 +115,6 @@ class FreightAutomation:
 
             # 스케줄 검색 응답 결과 저장
             elements = self.driver.find_element(By.XPATH, '/html/body/pre')
-            # print(elements.text)
 
             json_data = json.loads(elements.text)
             time.sleep(5)
@@ -128,7 +126,6 @@ class FreightAutomation:
 
             time.sleep(5)
             
-            # https://api.ekmtc.com/schedule/schedule/leg/pop-fre-app-no?porCtrCd=KR&porPlcCd=PUS&dlyCtrCd=HK&dlyPlcCd=HKG&eiCatCd=O&logYn=N&etd=20241122&promotionChk=N&vslCd=JSOR&voyNo=2415S&rteCd=KTS&hotDealYn=N&hotDealReqRno=&raTsParam=
 
             self.driver.get('https://api.ekmtc.com/schedule/schedule/leg/pop-fre-app-no?porCtrCd=KR&porPlcCd=PUS&dlyCtrCd=HK&dlyPlcCd=HKG&eiCatCd=O&logYn=N&etd=20241112&promotionChk=N&vslCd=&voyNo=&rteCd=KTS&hotDealYn=N&hotDealReqRno=&raTsParam=')
             getReqNo = self.driver.find_element(By.XPATH, '/html/body/pre')
@@ -161,20 +158,6 @@ class FreightAutomation:
     #     except Exception as e:
     #         print(f"Error set next month: {str(e)}")
    
-
-    # def check_freight(self):
-    #     try:
-    #         # Implementation to select the specific date and check freight rates
-    #         self.driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[2]/div/div[2]/table/tbody/tr[3]/td[3]/div/div/div[24]/div/div/p/a').click()
-    #         time.sleep(3)
-
-    #         # 운임확인 버튼 클릭
-    #         self.driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[4]/div/a[1]').click()
-    #         print("Freight checked")
-
-    #     except Exception as e:
-    #         print(f"Error checking freight: {str(e)}")
-
     def get_freight_data(self, reqRno_value):
         # 선사 스케줄 클릭
         try:
@@ -225,15 +208,5 @@ if __name__ == "__main__":
 
     bot.login()
     time.sleep(3)
-    # reqRno_value = bot.set_port()
     bot.set_port_export()
-    # time.sleep(2)
-    # bot.set_next_month() 
-    # time.sleep(3)
-    # bot.check_freight()
-    # bot.get_freight_data(reqRno_value)
-    # time.sleep(3)
-    # bot.insert_data_into_db(freight_data)
-    # bot.check_freight()
-    # bot.logout()
-    # bot.close()
+
