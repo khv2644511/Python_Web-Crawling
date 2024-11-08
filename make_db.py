@@ -4,6 +4,75 @@ import json
 with open('freight_data2.json', "r") as f:
     data = json.load(f)
 
+with open('port.json', "r") as f:
+    port_data = json.load(f)
+
+def insert_port_data(json):
+        # 전역 변수 선언부
+        conn = None
+        cur = None
+
+        # MySQL 연결 설정
+        conn = pymysql.connect(host='127.0.0.1', user='root', password='khv032900!', db='pythonDB', charset='utf8')
+        cur = conn.cursor()
+
+        # create_port_info_table_sql = """
+        # CREATE TABLE IF NOT EXISTS portTable (
+        #     id INT AUTO_INCREMENT PRIMARY KEY,
+        #     ctrCd VARCHAR(2),
+        #     ctrEnm VARCHAR(50),
+        #     lowerCtrEnm VARCHAR(50),
+        #     plcCd VARCHAR(3),
+        #     plcNm VARCHAR(50),
+        #     plcEnm VARCHAR(50),
+        #     lowerPlcEnm VARCHAR(50),
+        #     plcEnmOnly VARCHAR(50),
+        #     plcCatCd char(2)
+        # )
+        # """
+        # cur.execute(create_port_info_table_sql)
+
+        portTable=""
+        # 테이블 생성
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS portTable(
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            ctrCd VARCHAR(2),
+            ctrEnm VARCHAR(50),
+            lowerCtrEnm VARCHAR(50),
+            plcCd VARCHAR(3),
+            plcNm VARCHAR(100),
+            plcEnm VARCHAR(255), 
+            lowerPlcEnm VARCHAR(100),
+            plcEnmOnly VARCHAR(100),
+            plcCatCd char(2)
+        )""")
+
+
+           # Insert data into the table
+        insert_sql = """
+        INSERT INTO portTable (ctrCd, ctrEnm, lowerCtrEnm, plcCd, plcNm, plcEnm, lowerPlcEnm, plcEnmOnly, plcCatCd)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        for item in json:
+            cur.execute(insert_sql, (
+                item['ctrCd'],
+                item['ctrEnm'],
+                item['lowerCtrEnm'],
+                item['plcCd'],
+                item['plcNm'],
+                item['plcEnm'],
+                item['lowerPlcEnm'],
+                item['plcEnmOnly'],
+                item['plcCatCd'],
+            ))
+        
+
+        conn.commit()
+
+        # 마지막엔 무조건 close() 메소드로 db연결을 해제해야 한다.
+        conn.close()
+
 def insert_data_into_db(json):
     try:
         # 전역 변수 선언부
@@ -66,3 +135,4 @@ def insert_data_into_db(json):
         print(f"cannot insert into db: {str(e)}")
     
 insert_data_into_db(data)
+insert_port_data(port_data)

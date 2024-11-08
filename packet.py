@@ -13,6 +13,9 @@ import os
 import time
 import json
 import requests
+import pymysql
+
+conn = pymysql.connect(host='127.0.0.1', user='root', password='khv032900!', db='pythonDB', charset='utf8')
 
 
 class FreightAutomation:
@@ -63,7 +66,35 @@ class FreightAutomation:
         except Exception as e:
             print(f"Login failed: {str(e)}")
 
-    def set_port(self):
+    def set_port_export(self):
+        cur = conn.cursor()
+
+        sql = "SELECT ctrCd,plcCd,plcEnm FROM portTable pt WHERE ctrCd = 'kr'"
+        cur.execute(sql)
+        result = cur.fetchall()
+        for item in result:
+
+            ctrCd, plcCd, plcName = item
+            # 문자열 공백을 +로 채워서 params를 보내야함
+            if isinstance(plcName, str):
+                plcName = plcName.replace(" ", "+")
+            
+            # print((ctrCd, plcCd, plcName))
+            param = {
+                "startPlcCd": plcCd, # "PUS"
+                "searchMonth": "11", #
+                "startPlcName": plcName, #"Busan, Korea (PUS)"
+                "destPlcCd": "HKG", #
+                "searchYear": "2024", #
+                "startCtrCd": ctrCd, #"KR"
+                "destCtrCd": "HK", #
+                "destPlcName": "Hong Kong (HKG)", #
+            }
+            reqRno_value = self.set_port(param)
+            time.sleep(2)  
+            self.get_freight_data(reqRno_value)
+        
+    def set_port(self, param):
         try:
             time.sleep(5)
 
@@ -75,29 +106,11 @@ class FreightAutomation:
                 request.headers['Authorization'] = f'Bearer {token}'
 
             self.driver.request_interceptor = interceptor
-          
-            param = {
-                "startPlcCd": "PUS", #
-                "searchMonth": "11", #
-                "bound": "O", 
-                "startPlcName": "Busan, Korea (PUS)", #
-                "destPlcCd": "HKG", #
-                "searchYear": "2024", #
-                # "filterYn": "N", 
-                # "searchYN": "Y",
-                "startCtrCd": "KR ", #
-                "destCtrCd": "HK", #
-                "destPlcName": "Hong Kong (HKG)", #
-                # "main": "N",
-                # "legIdx": "0",
-                # "vslType01": "01",
-                # "vslType03": "03",
-                # "eiCatCd": "O",
-                # "calendarOrList": "C",
-                # "cpYn": "N",
-                # "promotionChk": "N",
-            }
-            self.driver.get('https://api.ekmtc.com/schedule/schedule/leg/search-schedule?startPlcCd=PUS&searchMonth=11&pointChangeYN=&bound=O&filterPolCd=&pointLength=&startPlcName=Busan,+Korea+(PUS)&destPlcCd=HKG&searchYear=2024&filterYn=N&searchYN=Y&filterPodCd=&hiddestPlcCd=&startCtrCd=KR&destCtrCd=HK&polTrmlStr=&podTrmlStr=&rteCd=&filterTs=Y&filterDirect=Y&filterTranMax=0&filterTranMin=0&hidstartPlcCd=&destPlcName=Hong+Kong+(HKG)&main=N&legIdx=0&vslType01=01&vslType03=03&unno=&commodityCd=&eiCatCd=O&calendarOrList=C&cpYn=N&promotionChk=N&vslCd=&voyNo=')
+
+            print('param', param.get('startPlcCd'))
+
+            self.driver.get(f"https://api.ekmtc.com/schedule/schedule/leg/search-schedule?startPlcCd={param.get('startPlcCd')}&searchMonth={param.get('searchMonth')}&pointChangeYN=&bound=O&filterPolCd=&pointLength=&startPlcName={param.get('startPlcName')}&destPlcCd={param.get('destPlcCd')}&searchYear=2024&filterYn=N&searchYN=Y&filterPodCd=&hiddestPlcCd=&startCtrCd=KR&destCtrCd=HK&polTrmlStr=&podTrmlStr=&rteCd=&filterTs=Y&filterDirect=Y&filterTranMax=0&filterTranMin=0&hidstartPlcCd=&destPlcName=Hong+Kong+(HKG)&main=N&legIdx=0&vslType01=01&vslType03=03&unno=&commodityCd=&eiCatCd=O&calendarOrList=C&cpYn=N&promotionChk=N&vslCd=&voyNo=")
+            
             # self.driver.get(f'https://api.ekmtc.com/schedule/schedule/leg/search-schedule?startPlcCd={param.get("startPlcCd")}&searchMonth={param.get("searchMonth")}&startPlcName={param.get("startPlcName")}&destPlcCd={param.get("destPlcCd")}&searchYear={param.get("searchYear")}')
             time.sleep(5)
 
@@ -110,7 +123,7 @@ class FreightAutomation:
             with open('schedule.json', 'w') as f:
                 json.dump(json_data, f)
 
-           
+            #   schedule.json의 polEtd1 날짜
             print("port selected")
 
             time.sleep(5)
@@ -209,15 +222,17 @@ class FreightAutomation:
 
 if __name__ == "__main__":
     bot = FreightAutomation()
+
     bot.login()
     time.sleep(3)
-    reqRno_value = bot.set_port()
-    time.sleep(2)
+    # reqRno_value = bot.set_port()
+    bot.set_port_export()
+    # time.sleep(2)
     # bot.set_next_month() 
     # time.sleep(3)
     # bot.check_freight()
-    bot.get_freight_data(reqRno_value)
-    time.sleep(3)
+    # bot.get_freight_data(reqRno_value)
+    # time.sleep(3)
     # bot.insert_data_into_db(freight_data)
     # bot.check_freight()
     # bot.logout()
