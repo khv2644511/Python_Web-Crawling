@@ -91,7 +91,7 @@ class FreightAutomation:
             }
             reqRno_value = self.set_port(param)
             time.sleep(2)  
-            self.get_freight_data(reqRno_value)
+            self.get_freight_data(reqRno_value, param.get('startPlcCd'))
         
     def set_port(self, param):
         try:
@@ -158,7 +158,7 @@ class FreightAutomation:
     #     except Exception as e:
     #         print(f"Error set next month: {str(e)}")
    
-    def get_freight_data(self, reqRno_value):
+    def get_freight_data(self, reqRno_value, startPlcCd):
         # 선사 스케줄 클릭
         try:
             # # 운임 확인 api 요청 url
@@ -184,7 +184,7 @@ class FreightAutomation:
 
             json_data = json.loads(elements.text)
             time.sleep(5)
-            with open('freight_data2.json', 'w') as f:
+            with open(f'freight_data_{startPlcCd}.json', 'w') as f:
                 json.dump(json_data, f)
 
             print("get_freight_data successfully")
