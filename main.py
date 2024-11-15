@@ -14,9 +14,10 @@ import time
 import json
 import requests
 import pymysql
+from make_db import insert_data_into_db
 
 conn = pymysql.connect(host='127.0.0.1', user='root', password='khv032900!', db='pythonDB', charset='utf8')
-
+isSchedule = True
 
 class FreightAutomation:
     def __init__(self):
@@ -66,33 +67,58 @@ class FreightAutomation:
         except Exception as e:
             print(f"Login failed: {str(e)}")
 
+    # 출발항을 한국에 있는 모든 항구로 설정해서 각 수출 경로별 데이터 운임을 받아오도록 하는 함수
     def set_port_export(self):
         cur = conn.cursor()
 
-        sql = "SELECT ctrCd,plcCd,plcEnm FROM portTable pt WHERE ctrCd = 'kr'"
-        cur.execute(sql)
-        result = cur.fetchall()
-        for item in result:
+        selec_korea_port_sql = "SELECT ctrCd,plcCd,plcEnm FROM portTable pt WHERE ctrCd = 'kr'"
+        select_abroad__port_sql = "SELECT ctrCd,plcCd,plcEnm FROM portTable pt WHERE ctrCd != 'kr' ORDER BY ctrCd ASC"
 
-            ctrCd, plcCd, plcName = item
-            # 문자열 공백을 +로 채워서 params를 보내야함
-            if isinstance(plcName, str):
-                plcName = plcName.replace(" ", "+")
-            
-            param = {
-                "startPlcCd": plcCd, # "PUS"
-                "searchMonth": "11", #
-                "startPlcName": plcName, #"Busan, Korea (PUS)"
-                "destPlcCd": "HKG", #
-                "searchYear": "2024", #
-                "startCtrCd": ctrCd, #"KR"
-                "destCtrCd": "HK", #
-                "destPlcName": "Hong Kong (HKG)", #
-            }
-            reqRno_value = self.set_port(param)
-            time.sleep(2)  
-            self.get_freight_data(reqRno_value, param.get('startPlcCd'))
+        cur.execute(selec_korea_port_sql)
+        kr_port_result = cur.fetchall()
         
+        cur.execute(select_abroad__port_sql)
+        abroad_port_result = cur.fetchall()
+
+        try:
+            for start in kr_port_result:
+                for dest in abroad_port_result:
+                    start_ctrCd, start_plcCd, start_plcName = start
+                    dest_ctrCd, dest_plcCd, dsest_plcName = dest
+
+                    # 문자열 공백을 +로 채워서 params를 보내야함
+                    if isinstance(start_plcName, str):
+                        start_plcName = start_plcName.replace(" ", "+")
+                    if isinstance(dsest_plcName, str):
+                        dsest_plcName = dsest_plcName.replace(" ", "+")
+                    
+                    param = {
+                        "startPlcCd": start_plcCd, # "PUS"
+                        "searchMonth": "11", #
+                        "startPlcName": start_plcName, #"Busan, Korea (PUS)"
+                        "destPlcCd": dest_plcCd, #HKG
+                        "searchYear": "2024", #
+                        "startCtrCd": start_ctrCd, #"KR"
+                        "destCtrCd": dest_ctrCd, #HK
+                        "destPlcName": dsest_plcName, #Hong Kong (HKG)
+                    }
+                    # 스케줄 없는 경우는 패스, 패스하지 않으면 에러남
+                    reqRno_value = self.set_port(param)
+                    if reqRno_value:
+
+                        time.sleep(2)
+                        self.get_freight_data(reqRno_value, param.get('startPlcCd'))
+
+                        with open(f'freight_data_{param.get("startPlcCd")}.json', "r") as f:
+                            data = json.load(f)
+                        insert_data_into_db(data, param.get('startPlcCd'), param.get('destPlcCd'))
+                    else:
+                        continue
+                print('one loop complete')
+        except Exception as e:
+            print(f"cannot insert into db: {str(e)}")
+
+            
     def set_port(self, param):
         try:
             time.sleep(5)
@@ -106,17 +132,24 @@ class FreightAutomation:
 
             self.driver.request_interceptor = interceptor
 
-            print('param', param.get('startPlcCd'))
+            print('param', param.get('startPlcCd'), param.get('destPlcCd'))
 
             self.driver.get(f"https://api.ekmtc.com/schedule/schedule/leg/search-schedule?startPlcCd={param.get('startPlcCd')}&searchMonth={param.get('searchMonth')}&pointChangeYN=&bound=O&filterPolCd=&pointLength=&startPlcName={param.get('startPlcName')}&destPlcCd={param.get('destPlcCd')}&searchYear=2024&filterYn=N&searchYN=Y&filterPodCd=&hiddestPlcCd=&startCtrCd=KR&destCtrCd=HK&polTrmlStr=&podTrmlStr=&rteCd=&filterTs=Y&filterDirect=Y&filterTranMax=0&filterTranMin=0&hidstartPlcCd=&destPlcName=Hong+Kong+(HKG)&main=N&legIdx=0&vslType01=01&vslType03=03&unno=&commodityCd=&eiCatCd=O&calendarOrList=C&cpYn=N&promotionChk=N&vslCd=&voyNo=")
-            
-            # self.driver.get(f'https://api.ekmtc.com/schedule/schedule/leg/search-schedule?startPlcCd={param.get("startPlcCd")}&searchMonth={param.get("searchMonth")}&startPlcName={param.get("startPlcName")}&destPlcCd={param.get("destPlcCd")}&searchYear={param.get("searchYear")}')
+
             time.sleep(5)
 
             # 스케줄 검색 응답 결과 저장
             elements = self.driver.find_element(By.XPATH, '/html/body/pre')
 
             json_data = json.loads(elements.text)
+            print(len(json_data.get('listSchedule')))
+
+            # listSchedule이 빈 배열이면 스케줄이 없는 경우
+            if len(json_data.get('listSchedule')) == 0:
+                isSchedule = False  
+                print('no Schedule')
+                return isSchedule
+            
             time.sleep(5)
             with open('schedule.json', 'w') as f:
                 json.dump(json_data, f)
@@ -132,12 +165,18 @@ class FreightAutomation:
             # print(elements.text)
 
             getReqNo_json_data = json.loads(getReqNo.text)
+            print('getReqNo_json_data', getReqNo_json_data)
+            # 경로상 스케줄 없는 경우도 있음
+            if getReqNo_json_data:
 
-            reqRno_value = getReqNo_json_data.get("reqRno")
-            print(reqRno_value)
+                reqRno_value = getReqNo_json_data.get("reqRno")
+                print(reqRno_value)
 
-            print('success')
-            return reqRno_value
+                print('success')
+                return reqRno_value
+            else:
+                print('no schedule')
+                return
         except Exception as e:
             print(f"Error selecting set port: {str(e)}")
 
@@ -191,6 +230,7 @@ class FreightAutomation:
             return json_data
         except Exception as e:
             print(f"Error get_freight_data: {str(e)}")
+            raise Exception("에러에러에러!!")
 
     def logout(self):
         try:

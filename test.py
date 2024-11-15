@@ -1,274 +1,218 @@
-from selenium import webdriver
+# from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
-import pyperclip
-from dotenv import load_dotenv
-import os
-import time
-import schedule
-import requests
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from seleniumwire import webdriver  # Import from selenium-wire to access additional features
-import json
-
-import time
-
+from dotenv import load_dotenv
+from bs4 import BeautifulSoup as bs
+from seleniumwire import webdriver
 import os
-import networkcap
+import time
+import json
+import requests
+import pymysql
+from make_db import insert_data_into_db
 
 
+conn = pymysql.connect(host='127.0.0.1', user='root', password='khv032900!', db='pythonDB', charset='utf8')
+isSchedule = True
 
-option = Options()
-# 알림창 끄기
-option.add_experimental_option("prefs", {
-    "profile.default_content_setting_values.notifications": 2 # 알림 차단
-})
-
-
-# 1. 브라우저 열기
-# driver = webdriver.Chrome()
-# driver = webdriver.Chrome(option)
-# chrome_options = webdriver.ChromeOptions()
-
-def get_chrome_options():
-    chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument('--no-sandbox')  # 안전하지 않은 작업을 방지
-    chrome_options.add_argument('--window-size=1280,920')  # 창 크기 설정
-    chrome_options.add_argument('--disable-dev-shm-usage')  # 공유 메모리 사용 제한
-    return chrome_options
-chrome_options = get_chrome_options()
-chrome_driver_path = ChromeDriverManager().install()
-service = Service(chrome_driver_path)
-driver = webdriver.Chrome(service=service, options=chrome_options) 
-
-driver.get("https://www.ekmtc.com/index.html#/main")
-
-# def postLogin():
-#     load_dotenv()
-#     id = os.environ.get('ID')
-#     pw = os.environ.get('PW')
-#     print(id, pw)
-#     time.sleep(3)
-    
-#     data={
-#         "email":id,
-#         "pass":pw,
-#         "token":'recapcha_token',
-#         'webtoken': 'cbnwTENL5z7tDDeHT6yNEK:APA91bHYL4P1JIhmqMQImr9-NUDOzp04XrFeVhPDhky4mgXq27lH3rmhwplw7LoELyRWHSG9BRzsafG2wJ1Vpv515TXxKuennsMWn_O0O_u281EEVhR84VLBVzg3FspKjVJUT5mTAXFk',
-#         "device" : 'pc',
-#         'language': 'kr'
-#     }
-#     session = requests.session()
-#     response=session.post("https://www.yolcargo.com/signin", data=data)
-    
-#     print(response.json())
-
-#     resHTML = session.get("https://www.yolcargo.com/login")
-#     print(resHTML.text)
-# postLogin()
-
-def findNextMonth():
-    driver.find_element(By.CSS_SELECTOR, '#frmLeg > div:nth-child(1) > table > tbody > tr:nth-child(2) > td:nth-child(2) > span:nth-child(1) > div > div > input').click()
-
-    calendar_visible = driver.find_element(By.ID, "MonthPicker_").is_displayed()
-
-    WebDriverWait(driver, 10).until(
-    EC.presence_of_element_located((By.ID, "MonthPicker_")))
-
-    if calendar_visible:
-        driver.find_element(By.CLASS_NAME, 'button-11').click()
-    
-    time.sleep(3)
-    driver.find_element(By.CSS_SELECTOR, '#frmLeg > div.position_relative > span > a').click()
-    #     for i in range(1, 5):
-    #         for j in range(1, 4):
-    #             css = f"#MonthPicker_ > div:nth-child(2) > table > tbody > tr:nth-child({j}) > td:nth-child({j}) > a"
-    #             month = driver.find_element(By.CSS_SELECTOR, css)
-
-    #             if month.text == '11월':
-    #                 month.click()
-                    #MonthPicker_ > div:nth-child(2) > table > tbody > tr:nth-child(1) > td:nth-child(1) > a
-                    #MonthPicker_ > div:nth-child(2) > table > tbody > tr:nth-child(4) > td:nth-child(1) > a
-            # element를 사용하여 필요한 작업 수행, 예를 들어 텍스트를 출력
-                # print(month.text)
-
-
-    #MonthPicker_ > div:nth-child(2) > table > tbody > tr:nth-child(1) > td:nth-child(1) > a > span
-    #MonthPicker_ > div:nth-child(2) > table > tbody > tr:nth-child(1) > td:nth-child(2) > a > span
-    #MonthPicker_ > div:nth-child(2) > table > tbody > tr:nth-child(1) > td:nth-child(3) > a > span
-    #MonthPicker_ > div:nth-child(2) > table > tbody > tr:nth-child(2) > td:nth-child(1) > a > span
-    #MonthPicker_ > div:nth-child(2) > table > tbody > tr:nth-child(4) > td:nth-child(1) > a > span
-def getResponse():
-    # Perform a GET request to a webpage
-    time.sleep(7)
-    driver.get('https://api.ekmtc.com')
-
-    request = driver.wait_for_request('./schedule/schedule/leg/pop-fre-surcharge/*')
-
-    content_type = request.response.headers.get('Content-Type', '')
-    print(content_type)
-    if 'text' in content_type or 'json' in content_type:
-        # If the content is text, decode it as utf-8
-                #     f.write(json_data)
-        json_data = json.loads(request.response.body.decode('utf-8'))
-
-        time.sleep(5)
-        with open('data.json', 'w') as f:
-            json.dump(json_data, f)
-    elif 'image' in content_type:
-        # If the content is an image, handle it as binary data
-        image_data = request.response.body
-        print(f'Image retrieved, 응답코드 {request.response.status_code}, 컨텐츠 유형: {content_type}')
-        # Optionally, save the image to a file
-        with open('downloaded_image.png', 'wb') as f:
-            f.write(image_data)
-    else:
-        # If the content type is something else
-        print(f'Unhandled content type {content_type}, 응답코드 {request.response.status_code}')
-
-def findFreight():
-    # date15 = driver.find_element(By.CSS_SELECTOR, 'body > div:nth-child(1) > div.wrap.wrap_KOR > div.container_ekmtc > div.content > div > div.tabs-details > div:nth-child(1) > div > div:nth-child(2) > div > div.sc_calender_type > table > tbody > tr:nth-child(3) > td:nth-child(3)')
-
-    # 첫번째 선사 선택
-    # ship = date15.find_element(By.CLASS_NAME, 'finish')
-    # ship.click()
-    time.sleep(3)
-
-    driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[2]/div/div[2]/table/tbody/tr[3]/td[3]/div/div/div[24]/div/div/p/a').click()
-    time.sleep(3)
-
-    # 운임확인 버튼 클릭
-    driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[4]/div/a[1]').click()
-
-    time.sleep(3)
-
-    getResponse()
-
-
-    # session = requests.session()
-
-    # res = session.get('https://api.ekmtc.com/schedule/schedule/leg/pop-fre-surcharge?porCtrCd=KR&porPlcCd=PUS&dlyCtrCd=HK&dlyPlcCd=HKG&polNm=BUSAN,KOREA&podNm=HONG+KONG&etd=20241112&frtAppNo=&vslCd=JTGZ&vslNm=TS+GUANGZHOU&voyNo=24019S&rteCd=KTH&eiCatCd=O&frtResult=&reqRno=000000473452&bkgClose=N&raTsParam=&promotionChk=N&scenarioCd=&promoNo=&kmtcSpotYn=Y&kmtcPremiumNegoYn=Y&etaBookingMsg=&hongkongTsYn=&hongkongTsMsg=&detailResp2=%7B%22tsDegree%22:%220%22,%22vslNm1%22:%22TS+GUANGZHOU%22,%22voyNo%22:%2224019S%22,%22rteCd%22:%22KTH%22,%22polNm%22:%22BUSAN,KOREA%22,%22podNm%22:%22HONG+KONG%22,%22pod1Nm%22:%22HONG+KONG%22,%22transitTime%22:%226%EC%9D%BC+4%EC%8B%9C%EA%B0%84+%22,%22transitTime1%22:%226%EC%9D%BC+4%EC%8B%9C%EA%B0%84+%22,%22polEtbDT%22:%222024.11.12+08:00%22,%22etdDT%22:%222024.11.12+19:00%22,%22polTml%22:%22BPTG+(Busan+Port+Terminal+(GAMMAN))%22,%22polTmlCd%22:%22BPTG%22,%22etaDT%22:%222024.11.18+23:00%22,%22podTml%22:%22HIT+(Hongkong+International+Terminal)%22,%22vslNm2%22:%22%22,%22voyNo2%22:%22%22,%22rteCd2%22:%22%22,%22pod2Nm%22:%22%22,%22transitTime2%22:%22%22,%22polEtbDT2%22:%22%22,%22polTml2%22:%22%22,%22etaDT2%22:%22%22,%22podTml2%22:%22%22,%22vslNm3%22:%22%22,%22voyNo3%22:%22%22,%22rteCd3%22:%22%22,%22pod3Nm%22:%22%22,%22transitTime3%22:%22%22,%22polEtbDT3%22:%22%22,%22polTml3%22:%22%22,%22etaDT3%22:%22%22,%22podTml3%22:%22%22,%22vslNm4%22:%22%22,%22voyNo4%22:%22%22,%22rteCd4%22:%22%22,%22pod4Nm%22:%22%22,%22transitTime4%22:%22%22,%22polEtbDT4%22:%22%22,%22polTml4%22:%22%22,%22etaDT4%22:%22%22,%22podTml4%22:%22%22,%22bkgDocCls%22:%222024.11.08+11:00%22,%22bkgCgoCls%22:%222024.11.12+02:00%22,%22bkgMfCls%22:%222024.11.08+11:00%22,%22cfsCls%22:%222024.11.08+16:00%22,%22mrnNo%22:%22%22,%22apoTcnt%22:%22%22,%22callSign%22:%22V7A5825%22,%22ts%22:%22N%22,%22vslCd%22:%22JTGZ%22,%22pol%22:%22PUS%22,%22pod%22:%22HKG%22,%22bkgClose%22:%22N%22,%22dtBkgYn%22:%22N%22,%22bkgVslCd%22:%22JTGZ%22,%22bkgVoyNo%22:%2224019S%22,%22kmtcSpotLineYn%22:%22Y%22,%22kmtcSpotUserYn%22:%22Y%22,%22kmtcSpotClosYn%22:%22N%22,%22etd%22:%2220241112%22,%22etdTm%22:%221900%22,%22eta%22:%2220241118%22,%22etaTm%22:%222300%22,%22vslNm%22:%22TS+GUANGZHOU%22,%22polEta%22:%22202411120800%22,%22polEtd%22:%22202411121900%22,%22podTmlCd%22:%22HIT%22,%22polCtrCd%22:%22KR%22,%22podCtrCd%22:%22HK%22,%22vgmDocCls%22:%222024.11.08+11:00%22,%22frtResult%22:%22A%22,%22frtAppNo%22:%22%22,%22reqRno%22:%22000000473452%22%7D&urlOrNot=false&cntrTypCd=GP', headers=headers)
-    # print(res.json())
-
-
-
-
-def login():
-
-    try:  
-        driver.find_element(By.CSS_SELECTOR, "body > div > div.wrap.wrap_KOR > div.header > div.inner_header > div.wrap_util > ul > li:nth-child(2) > a").click()
-
-        # print("로그인 실행중...")
-            # load .env
+class FreightAutomation:
+    def __init__(self):
+        self.driver = self.initialize_driver()
+        self.login_url = "https://www.ekmtc.com"
+        self.schedule_url = "https://www.ekmtc.com/index.html#/schedule/leg"
         load_dotenv()
-        id = os.environ.get('ID')
-        pw = os.environ.get('PW')
-        print(id, pw)
-        # 2. 아이디 입력
-        # pyperclip.copy(id)
-        id_input = driver.find_element(By.CSS_SELECTOR, "#id")
-        # time.sleep(1)
-        # id_input.send_keys(Keys.COMMAND, "v")
-        id_input.send_keys(id)
+        self.id = os.getenv('ID')
+        self.pw = os.getenv('PW')
 
-        # 3. 비밀번호 입력
-        # pyperclip.copy(pw)
-        pw_input = driver.find_element(By.CSS_SELECTOR, "#pw")
-        time.sleep(1)
+    def initialize_driver(self):
 
-        # pw_input.send_keys(Keys.COMMAND, "v")
-        pw_input.send_keys(pw)
-        time.sleep(2)
+        options = {
+            'disable_encoding': True  # This can help capture binary data without corruption
+        }
 
-        # 4. 로그인 버튼 클릭
-        driver.find_element(By.CSS_SELECTOR, "body > div > div.wrap.wrap_KOR > div.header > div.inner_header > div.wrap_util > div.loginLayer_wrap > fieldset > div.btnarea > a.button.blue.sm").click()
-        time.sleep(7)
+        chrome_options = webdriver.ChromeOptions()
+        # chrome_options.add_argument("headless")
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--window-size=1280,920')
+        chrome_options.add_argument('--disable-dev-shm-usage')
 
-        # 프로필 선택
-        driver.find_element(By.CSS_SELECTOR, '#profile_pop > div > div.content_box > ul > li:nth-child(2) > p.img > img').click()
-        time.sleep(5)
+        chrome_driver_path = ChromeDriverManager().install()
+        service = Service(chrome_driver_path)
+
+        return webdriver.Chrome(service=service, options=chrome_options, seleniumwire_options=options)
 
 
-        driver.get('https://www.ekmtc.com/index.html#/schedule/leg')
-        time.sleep(10)
+    def login(self):
+        self.driver.get(self.login_url)
+        try:
+            # 로그인 버튼 클릭
+            self.driver.find_element(By.CSS_SELECTOR, "body > div > div.wrap.wrap_KOR > div.header > div.inner_header > div.wrap_util > ul > li:nth-child(2) > a").click()
 
-        # 구간 선택
-        departPort = driver.find_element(By.CSS_SELECTOR, '#autocomplete-form-input')
-        # departPort.click()
-        departPort.send_keys('Busan, Korea (PUS)')
+            id_input = self.driver.find_element(By.CSS_SELECTOR, "#id")
+            id_input.send_keys(self.id)
+            pw_input = self.driver.find_element(By.CSS_SELECTOR, "#pw")
+            pw_input.send_keys(self.pw)
 
-        WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[1]/form/div[1]/table/tbody/tr[1]/td[1]/div/div[2]/button[1]")))
+            # 로그인 버튼 클릭
+            self.driver.find_element(By.CSS_SELECTOR, "body > div > div.wrap.wrap_KOR > div.header > div.inner_header > div.wrap_util > div.loginLayer_wrap > fieldset > div.btnarea > a.button.blue.sm").click()
 
-        driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[1]/form/div[1]/table/tbody/tr[1]/td[1]/div/div[2]/button[1]').click()
-        time.sleep(3)
+            # 프로필 선택
+            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, "#profile_pop > div > div.content_box > ul > li:nth-child(2) > p.img > img")))
+            self.driver.find_element(By.CSS_SELECTOR, '#profile_pop > div > div.content_box > ul > li:nth-child(2) > p.img > img').click()
+            print("Login successful")
+        except Exception as e:
+            print(f"Login failed: {str(e)}")
 
-        # if btn:
-        #     driver.find_element(By.CSS_SELECTOR, '#autocomplete_1729495963260_1570 > button').click()
-        #     print('auto click')
+    # 출발항을 한국에 있는 모든 항구로 설정해서 각 항구별 데이터 운임을 받아오도록 하는 함수
+    def set_port_export(self):
+        cur = conn.cursor()
 
-        arrivePort = driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[1]/form/div[1]/table/tbody/tr[1]/td[2]/div/div[1]/input')
-        arrivePort.send_keys('Hong Kong (HKG)')
-        # arrivePort.click()
-        # time.sleep(3)
-        WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[1]/form/div[1]/table/tbody/tr[1]/td[2]/div/div[2]/button[1]")))
+        sql = "SELECT ctrCd,plcCd,plcEnm FROM portTable pt WHERE ctrCd = 'kr'"
+        select_abroad_sql = "SELECT ctrCd,plcCd,plcEnm FROM portTable pt WHERE ctrCd != 'kr' ORDER BY ctrCd ASC"
 
-        driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/div/div[2]/div[1]/div/div[1]/form/div[1]/table/tbody/tr[1]/td[2]/div/div[2]/button[1]').click()
-        time.sleep(3)
-
+        cur.execute(sql)
+        kr_port_result = cur.fetchall()
         
-        findNextMonth()
+        cur.execute(select_abroad_sql)
+        abroad_port_result = cur.fetchall()
+
+        try:
         
-        # date.send_keys('2024.11')
-        time.sleep(3)
 
-   
+            # # 문자열 공백을 +로 채워서 params를 보내야함
+            # if isinstance(start_plcName, str):
+            #     start_plcName = start_plcName.replace(" ", "+")
+            # if isinstance(dsest_plcName, str):
+            #     dsest_plcName = dsest_plcName.replace(" ", "+")
+            
+            param = {
+                "startPlcCd": "PUS", # "PUS"
+                "searchMonth": "11", #
+                "startPlcName": "Busan, Korea (PUS)", #"Busan, Korea (PUS)"
+                "destPlcCd": "QIW", #HKG
+                "searchYear": "2024", #
+                "startCtrCd": "KR", #"KR"
+                "destCtrCd": "AE", #HK
+                "destPlcName": "Umm Al Qaiwain, United Arab Emirates (QIW)", #Hong Kong (HKG)
+            }
+            reqRno_value = self.set_port(param)
+            if reqRno_value:
 
-        findFreight()
+                time.sleep(2)
+                self.get_freight_data(reqRno_value, param.get('startPlcCd'))
+
+                with open(f'freight_data_{param.get("startPlcCd")}.json', "r") as f:
+                    data = json.load(f)
+                insert_data_into_db(data, param.get('startPlcCd'), param.get('destPlcCd'))
+            # else:
+            print('one loop complete')
+        except Exception as e:
+            print(f"cannot insert into db: {str(e)}")
+            
+
+            
+    def set_port(self, param):
+        try:
+            time.sleep(5)
+
+            self.driver.get("https://www.ekmtc.com/index.html#/schedule/leg")
+            time.sleep(5)
+
+            def interceptor(request):
+                token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzZXNzSWQiOiJBZDBpRVBwZ19WY0tkTUhxcXdLaVFmUEZRMENFQWJsaGtEaUZwNmhyLTEzNDU0OCIsInVzZXJJZCI6IllPTDAwM18wMDEiLCJvcmdVc2VySWQiOiJZT0xDQVJHTyIsInVzZXJOYW1lIjoi6rCV7J246recIiwidXNlckVuYW1lIjoiWU9MIElOQyIsImNzdENhdENkIjoiMDEiLCJ1c2VyVHlwZSI6IjkiLCJjc3RDZCI6IllPTDAwMyIsInN0YWZmRmxhZyI6Ik4iLCJ1c2VyQ3RyQ2QiOiJLUiIsImFkbWluIjpmYWxzZSwicm9sZSI6Ik1FTUJFUiIsInNlcnZpY2VMYW5nIjoiS09SIiwiaWF0IjoxNzI5NzQ1MTQ4LCJleHAiOjE3MzI0MjM1NDh9.JACVS2Ki0YukSEM3QCwgutyESKNrK6mK9ww5yEb8w2I'
+                request.headers['Authorization'] = f'Bearer {token}'
+
+            self.driver.request_interceptor = interceptor
+
+            print('param', param.get('startPlcCd'), param.get('destPlcCd'))
+
+            self.driver.get(f"https://api.ekmtc.com/schedule/schedule/leg/search-schedule?startPlcCd={param.get('startPlcCd')}&searchMonth={param.get('searchMonth')}&pointChangeYN=&bound=O&filterPolCd=&pointLength=&startPlcName={param.get('startPlcName')}&destPlcCd={param.get('destPlcCd')}&searchYear=2024&filterYn=N&searchYN=Y&filterPodCd=&hiddestPlcCd=&startCtrCd=KR&destCtrCd=HK&polTrmlStr=&podTrmlStr=&rteCd=&filterTs=Y&filterDirect=Y&filterTranMax=0&filterTranMin=0&hidstartPlcCd=&destPlcName=Hong+Kong+(HKG)&main=N&legIdx=0&vslType01=01&vslType03=03&unno=&commodityCd=&eiCatCd=O&calendarOrList=C&cpYn=N&promotionChk=N&vslCd=&voyNo=")
+            
+            # self.driver.get(f'https://api.ekmtc.com/schedule/schedule/leg/search-schedule?startPlcCd={param.get("startPlcCd")}&searchMonth={param.get("searchMonth")}&startPlcName={param.get("startPlcName")}&destPlcCd={param.get("destPlcCd")}&searchYear={param.get("searchYear")}')
+            time.sleep(5)
+
+            # 스케줄 검색 응답 결과 저장
+            elements = self.driver.find_element(By.XPATH, '/html/body/pre')
+
+            json_data = json.loads(elements.text)
+            print('json_data',json_data.get('listSchedule'))
+            if len(json_data.get('listSchedule')) == 0:
+                isSchedule = False
+                print(' no Schedule')
+                return isSchedule
+
+            time.sleep(5)
+            with open('schedule.json', 'w') as f:
+                json.dump(json_data, f)
+
+            #   schedule.json의 polEtd1 날짜
+            print("port selected")
+
+            time.sleep(5)
+            
+
+            self.driver.get('https://api.ekmtc.com/schedule/schedule/leg/pop-fre-app-no?porCtrCd=KR&porPlcCd=PUS&dlyCtrCd=HK&dlyPlcCd=HKG&eiCatCd=O&logYn=N&etd=20241112&promotionChk=N&vslCd=&voyNo=&rteCd=KTS&hotDealYn=N&hotDealReqRno=&raTsParam=')
+            getReqNo = self.driver.find_element(By.XPATH, '/html/body/pre')
+            # print(elements.text)
+
+            getReqNo_json_data = json.loads(getReqNo.text)
+            print('getReqNo_json_data', getReqNo_json_data)
+            # 경로상 스케줄 없는 경우도 있음
+            if getReqNo_json_data:
+
+                reqRno_value = getReqNo_json_data.get("reqRno")
+                print(reqRno_value)
+
+                print('success')
+                return reqRno_value
+            else:
+                print('no schedule')
+                return
+        except Exception as e:
+            print(f"Error selecting set port: {str(e)}")
+    def get_freight_data(self, reqRno_value, startPlcCd):
+        # 선사 스케줄 클릭
+        try:
+            # # 운임 확인 api 요청 url
+            token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzZXNzSWQiOiJBZDBpRVBwZ19WY0tkTUhxcXdLaVFmUEZRMENFQWJsaGtEaUZwNmhyLTEzNDU0OCIsInVzZXJJZCI6IllPTDAwM18wMDEiLCJvcmdVc2VySWQiOiJZT0xDQVJHTyIsInVzZXJOYW1lIjoi6rCV7J246recIiwidXNlckVuYW1lIjoiWU9MIElOQyIsImNzdENhdENkIjoiMDEiLCJ1c2VyVHlwZSI6IjkiLCJjc3RDZCI6IllPTDAwMyIsInN0YWZmRmxhZyI6Ik4iLCJ1c2VyQ3RyQ2QiOiJLUiIsImFkbWluIjpmYWxzZSwicm9sZSI6Ik1FTUJFUiIsInNlcnZpY2VMYW5nIjoiS09SIiwiaWF0IjoxNzI5NzQ1MTQ4LCJleHAiOjE3MzI0MjM1NDh9.JACVS2Ki0YukSEM3QCwgutyESKNrK6mK9ww5yEb8w2I'
+
+            header = {
+                'Authorization': f'Bearer {token}'
+            }
+            # requests.get(f'https://api.ekmtc.com/schedule/schedule/leg/pop-fre-surcharge?porCtrCd=KR&porPlcCd=PUS&dlyCtrCd=HK&dlyPlcCd=HKG&polNm=BUSAN,KOREA&podNm=HONG+KONG&etd=20241115&frtAppNo=&vslCd=JSKC&vslNm=SKY+CHALLENGE&voyNo=2408&reqRno_value={reqRno_value}', headers=header)
+
+            def interceptor(request):
+                token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzZXNzSWQiOiJBZDBpRVBwZ19WY0tkTUhxcXdLaVFmUEZRMENFQWJsaGtEaUZwNmhyLTEzNDU0OCIsInVzZXJJZCI6IllPTDAwM18wMDEiLCJvcmdVc2VySWQiOiJZT0xDQVJHTyIsInVzZXJOYW1lIjoi6rCV7J246recIiwidXNlckVuYW1lIjoiWU9MIElOQyIsImNzdENhdENkIjoiMDEiLCJ1c2VyVHlwZSI6IjkiLCJjc3RDZCI6IllPTDAwMyIsInN0YWZmRmxhZyI6Ik4iLCJ1c2VyQ3RyQ2QiOiJLUiIsImFkbWluIjpmYWxzZSwicm9sZSI6Ik1FTUJFUiIsInNlcnZpY2VMYW5nIjoiS09SIiwiaWF0IjoxNzI5NzQ1MTQ4LCJleHAiOjE3MzI0MjM1NDh9.JACVS2Ki0YukSEM3QCwgutyESKNrK6mK9ww5yEb8w2I'
+                request.headers['Authorization'] = f'Bearer {token}'
+
+            self.driver.request_interceptor = interceptor
+            self.driver.get(f'https://api.ekmtc.com/schedule/schedule/leg/pop-fre-surcharge?porCtrCd=KR&porPlcCd=PUS&dlyCtrCd=HK&dlyPlcCd=HKG&polNm=BUSAN,KOREA&podNm=HONG+KONG&etd=20241112&frtAppNo=&vslCd=KSG&vslNm=KMTC+SINGAPORE&voyNo=2415S&rteCd=KTS&eiCatCd=O&frtResult=&reqRno={reqRno_value}&bkgClose=N&raTsParam=&promotionChk=N&scenarioCd=&promoNo=&kmtcSpotYn=Y&kmtcPremiumNegoYn=Y&etaBookingMsg=&hongkongTsYn=&hongkongTsMsg=&detailResp2=%7B%22tsDegree%22:%220%22,%22vslNm1%22:%22KMTC+SINGAPORE%22,%22voyNo%22:%222415S%22,%22rteCd%22:%22KTS%22,%22polNm%22:%22BUSAN,KOREA%22,%22podNm%22:%22HONG+KONG%22,%22pod1Nm%22:%22HONG+KONG%22,%22transitTime%22:%223%EC%9D%BC+5%EC%8B%9C%EA%B0%84+30%EB%B6%84%22,%22transitTime1%22:%223%EC%9D%BC+5%EC%8B%9C%EA%B0%84+30%EB%B6%84%22,%22polEtbDT%22:%222024.11.11+14:00%22,%22etdDT%22:%222024.11.12+15:00%22,%22polTml%22:%22HBGT+(HUTCHISON+GAMMAN+TMNL(%231))%22,%22polTmlCd%22:%22HBGT%22,%22etaDT%22:%222024.11.15+20:30%22,%22podTml%22:%22HIT+(Hongkong+International+Terminal)%22,%22vslNm2%22:%22%22,%22voyNo2%22:%22%22,%22rteCd2%22:%22%22,%22pod2Nm%22:%22%22,%22transitTime2%22:%22%22,%22polEtbDT2%22:%22%22,%22polTml2%22:%22%22,%22etaDT2%22:%22%22,%22podTml2%22:%22%22,%22vslNm3%22:%22%22,%22voyNo3%22:%22%22,%22rteCd3%22:%22%22,%22pod3Nm%22:%22%22,%22transitTime3%22:%22%22,%22polEtbDT3%22:%22%22,%22polTml3%22:%22%22,%22etaDT3%22:%22%22,%22podTml3%22:%22%22,%22vslNm4%22:%22%22,%22voyNo4%22:%22%22,%22rteCd4%22:%22%22,%22pod4Nm%22:%22%22,%22transitTime4%22:%22%22,%22polEtbDT4%22:%22%22,%22polTml4%22:%22%22,%22etaDT4%22:%22%22,%22podTml4%22:%22%22,%22bkgDocCls%22:%222024.11.08+15:00%22,%22bkgCgoCls%22:%222024.11.11+06:00%22,%22bkgMfCls%22:%222024.11.08+15:00%22,%22cfsCls%22:%222024.11.08+12:00%22,%22mrnNo%22:%2224KMTC4656E%22,%22apoTcnt%22:%2214%22,%22callSign%22:%22DSOA9%22,%22ts%22:%22N%22,%22vslCd%22:%22KSG%22,%22pol%22:%22PUS%22,%22pod%22:%22HKG%22,%22bkgClose%22:%22N%22,%22dtBkgYn%22:%22N%22,%22bkgVslCd%22:%22KSG%22,%22bkgVoyNo%22:%222415S%22,%22kmtcSpotLineYn%22:%22Y%22,%22kmtcSpotUserYn%22:%22Y%22,%22kmtcSpotClosYn%22:%22N%22,%22etd%22:%2220241112%22,%22etdTm%22:%221500%22,%22eta%22:%2220241115%22,%22etaTm%22:%222030%22,%22vslNm%22:%22KMTC+SINGAPORE%22,%22polEta%22:%22202411111400%22,%22polEtd%22:%22202411121500%22,%22podTmlCd%22:%22HIT%22,%22polCtrCd%22:%22KR%22,%22podCtrCd%22:%22HK%22,%22vgmDocCls%22:%222024.11.08+15:00%22,%22frtResult%22:%22A%22,%22frtAppNo%22:%22%22,%22reqRno%22:%22000000473452%22%7D&urlOrNot=false&cntrTypCd=GP')
+
+            time.sleep(5)
+
+            # 스케줄 검색 응답 결과 저장
+            elements = self.driver.find_element(By.XPATH, '/html/body/pre')
+            # print(elements.text)
+
+            json_data = json.loads(elements.text)
+            time.sleep(5)
+            with open(f'freight_data_{startPlcCd}.json', 'w') as f:
+                json.dump(json_data, f)
+
+            print("get_freight_data successfully")
+            return json_data
+        except Exception as e:
+            print(f"Error get_freight_data: {str(e)}")
+            raise Exception("에러에러에러!!")
 
 
-    except Exception as e:
-        print(f'{str(e)}')
-    finally:
-        print('login success')
-login()
+bot = FreightAutomation()
 
-
-def logout():
-    try: 
-        print('로그아웃 실행중..')
-        driver.find_element(By.CSS_SELECTOR, '#app > div > div > header > div > div.v-btn-group.v-theme--light.v-btn-group--density-default.header_submenu > div.v-btn-group.v-theme--light.v-btn-group--density-default.header_submenu_sign.hidden-sm-and-down > button').click()
-    except Exception as e:
-        print(f'{str(e)}')
-    finally:
-        print('logout success')
-        
-# schedule.every(10).seconds.do(login)
-
-# step4.스캐쥴 시작
-# while True:
-#     schedule.run_pending()
-#     time.sleep(1)
-    # logout()    
-
-
-# response = requests.get(url)
-
-# if response.status_code == 200:
-#     html = response.text
-#     soup = BeautifulSoup(html, 'html.parser')
-#     # print(soup.prettify())
-#     # copy css selector
-#     # select_one => html 요소 추출
-#     title = soup.select_one('a.MyView-module__link_login___HpHMW')
-#     print(title)
-#     # print(title.get_text()) # get_text() text만 추출
-
-# else : 
-#     print(response.status_code)
+bot.login()
+time.sleep(3)
+bot.set_port_export()

@@ -4,10 +4,10 @@ import json
 with open('freight_data2.json', "r") as f:
     data = json.load(f)
 
-with open('port.json', "r") as f:
-    port_data = json.load(f)
+# with open('port.json', "r") as f:
+#     port_data = json.load(f)
 
-def insert_port_data(json):
+def insert_port_data(json, startPort):
         # 전역 변수 선언부
         conn = None
         cur = None
@@ -73,7 +73,9 @@ def insert_port_data(json):
         # 마지막엔 무조건 close() 메소드로 db연결을 해제해야 한다.
         conn.close()
 
-def insert_data_into_db(json):
+# 크롤링해서 받아온 운임데이터로부터 테이블 생성해서 데이터 넣기
+
+def insert_data_into_db(json, startPort, destPort):
     try:
         # 전역 변수 선언부
         conn = None
@@ -84,9 +86,12 @@ def insert_data_into_db(json):
         cur = conn.cursor()
 
         # freightTable 테이블 생성 (없을 경우에만 생성)
-        create_table_sql = """
+        create_table_sql = f"""
+        
         CREATE TABLE IF NOT EXISTS freightTable (
             id INT AUTO_INCREMENT PRIMARY KEY,
+            startPort VARCHAR(20),
+            destPort VARCHAR(20),
             EI VARCHAR(10),
             frtCd VARCHAR(10),
             frtCdNm VARCHAR(50),
@@ -105,16 +110,18 @@ def insert_data_into_db(json):
             if item.get('cntrTypCd') == "GP":
             # if item.get('cntrTypCd') == "GP" and item.get('frtCd') == "O/F":
 
-                ei_value = "Export" if item.get('frtPncCd') == 'P' else "Import" if item.get('frtPncCd') == 'C' else None
+                ei_value = "E Charges" if item.get('frtPncCd') == 'P' else "I Charges" if item.get('frtPncCd') == 'C' else None
 
                 # 데이터 삽입 SQL
-                insert_sql = """
-                INSERT INTO freightTable (frtCd, EI, frtCdNm, Currency, Type, cargo, rate20, rate40, rateHc)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                insert_sql = f"""
+                INSERT INTO freightTable (startPort, destPort, frtCd, EI, frtCdNm, Currency, Type, cargo, rate20, rate40, rateHc)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 
                 # 해당 항목이 존재하지 않을 경우 None으로 대체하여 데이터 삽입
                 cur.execute(insert_sql, (
+                    startPort,
+                    destPort,
                     item.get('frtCd'),
                     ei_value,
                     item.get('frtCdNm'),
@@ -134,5 +141,5 @@ def insert_data_into_db(json):
     except Exception as e:
         print(f"cannot insert into db: {str(e)}")
     
-insert_data_into_db(data)
-insert_port_data(port_data)
+# insert_data_into_db(data, 'busan', 'hong')
+# insert_port_data(port_data)
