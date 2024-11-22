@@ -15,6 +15,8 @@ import json
 import requests
 import pymysql
 from make_db import insert_data_into_db
+import pandas as pd
+
 
 conn = pymysql.connect(host='127.0.0.1', user='root', password='khv032900!', db='pythonDB', charset='utf8')
 isSchedule = True
@@ -86,12 +88,28 @@ class FreightAutomation:
                     start_ctrCd, start_plcCd, start_plcName = start
                     dest_ctrCd, dest_plcCd, dsest_plcName = dest
 
+                    # 이미 DB에 들어가있는 경우는 시도하지 않음
+
+                    # isNull = f"SELECT destPort FROM freightTable ft WHERE destPort = '{dest_plcCd}' is NULL;"
+                    # cur.execute(isNull)
+                    # result = cur.fetchall()
+                    
+                    query = "SELECT * FROM freightTable"
+                    df = pd.read_sql(query, conn)
+                    if (df['destPort'] == dest_plcCd).any():
+                        print('isdone?', dest_plcCd)
+                        continue
+                    # if(len(result) == 0):
+                        # continue
+
+
                     # 문자열 공백을 +로 채워서 params를 보내야함
                     if isinstance(start_plcName, str):
                         start_plcName = start_plcName.replace(" ", "+")
                     if isinstance(dsest_plcName, str):
                         dsest_plcName = dsest_plcName.replace(" ", "+")
                     
+
                     param = {
                         "startPlcCd": start_plcCd, # "PUS"
                         "searchMonth": "11", #
@@ -115,6 +133,9 @@ class FreightAutomation:
                     else:
                         continue
                 print('one loop complete')
+            
+            # 테이블생성 후 csv파일 생성
+            self.make_freightTable_to_csv()
         except Exception as e:
             print(f"cannot insert into db: {str(e)}")
 
@@ -238,6 +259,16 @@ class FreightAutomation:
             print("Logged out successfully")
         except Exception as e:
             print(f"Logout failed: {str(e)}")
+
+    def make_freightTable_to_csv(self):
+        try:
+            query = "SELECT * FROM freightTable"
+            data = pd.read_sql(query, conn)
+            conn.close()
+            data.to_excel('output.xlsx', index=False)
+            
+        except Exception as e:
+            print(f"failed to make csv file: {str(e)}")
 
     def close(self):
         self.driver.quit()
