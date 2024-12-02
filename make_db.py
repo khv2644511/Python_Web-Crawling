@@ -1,8 +1,8 @@
 import pymysql
 import json
 
-with open('freight_data2.json', "r") as f:
-    data = json.load(f)
+# with open('freight_data2.json', "r") as f:
+#     data = json.load(f)
 
 # with open('port.json', "r") as f:
 #     port_data = json.load(f)
@@ -77,6 +77,7 @@ def insert_port_data(json, startPort):
 
 def insert_data_into_db(json, startPort, destPort):
     try:
+        print('json 파라미터', json)
         # 전역 변수 선언부
         conn = None
         cur = None
